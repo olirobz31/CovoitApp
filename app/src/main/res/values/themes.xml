@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.CovoitApp" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
