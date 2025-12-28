@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -68,4 +69,10 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
     implementation("com.stripe:stripe-android:20.37.0")
+    // Retrofit pour appeler l'API Nominatim
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Crashlytics
+    implementation("com.google.firebase:firebase-crashlytics-ktx:18.6.1")
+    implementation("com.google.firebase:firebase-analytics-ktx:21.5.0")
 }

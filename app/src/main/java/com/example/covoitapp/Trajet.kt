@@ -10,5 +10,9 @@ data class Trajet(
     val prixParPersonne: Double = 0.0,
     val placesDisponibles: Int = 0,
     val placesTotales: Int = 0,
-    val photoUrl: String = "" // ⭐ NOUVEAU CHAMP
+    val photoUrl: String = "",  // ⭐ VIRGULE ICI !
+    val departLat: Double = 0.0,
+    val departLon: Double = 0.0,
+    val arriveeLat: Double = 0.0,
+    val arriveeLon: Double = 0.0
 )

@@ -1,5 +1,6 @@
 package com.example.covoitapp
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,10 +34,24 @@ fun CreateTripScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
 
+    // Autocomplete départ
+    var departSuggestions by remember { mutableStateOf<List<NominatimPlace>>(emptyList()) }
+    var showDepartSuggestions by remember { mutableStateOf(false) }
+
+    // Autocomplete arrivée
+    var arriveeSuggestions by remember { mutableStateOf<List<NominatimPlace>>(emptyList()) }
+    var showArriveeSuggestions by remember { mutableStateOf(false) }
+
     val scope = rememberCoroutineScope()
 
     // Date picker state
     val datePickerState = rememberDatePickerState()
+
+    // Coordonnées GPS
+    var departLat by remember { mutableStateOf(0.0) }
+    var departLon by remember { mutableStateOf(0.0) }
+    var arriveeLat by remember { mutableStateOf(0.0) }
+    var arriveeLon by remember { mutableStateOf(0.0) }
 
     // Date Picker Dialog
     if (showDatePicker) {
@@ -64,6 +80,54 @@ fun CreateTripScreen(
         }
     }
 
+    // Fonction pour rechercher adresses départ
+    fun searchDepartPlaces(query: String) {
+        println("🟦 searchDepartPlaces appelée avec: '$query'")
+        println("🟦 Longueur: ${query.length}")
+
+        if (query.length >= 1) {
+            println("🟢 Condition >= 1 validée")
+            scope.launch {
+                println("🟡 Coroutine lancée")
+                delay(300)
+                println("🟡 Après delay")
+                try {
+                    println("🔍 Appel API Nominatim...")
+                    val results = NominatimService.api.searchPlaces(query)
+                    println("✅ Résultats: ${results.size}")
+                    results.forEach { println("  - ${it.display_name}") }
+                    departSuggestions = results
+                    showDepartSuggestions = results.isNotEmpty()
+                    println("🟢 showDepartSuggestions = $showDepartSuggestions")
+                } catch (e: Exception) {
+                    println("❌ ERREUR: ${e.message}")
+                    e.printStackTrace()
+                }
+            }
+        } else {
+            println("🔴 Condition NON validée (query trop court)")
+            showDepartSuggestions = false
+        }
+    }
+
+    // Fonction pour rechercher adresses arrivée
+    fun searchArriveePlaces(query: String) {
+        if (query.length >= 1) {
+            scope.launch {
+                delay(300) // Debounce
+                try {
+                    val results = NominatimService.api.searchPlaces(query)
+                    arriveeSuggestions = results
+                    showArriveeSuggestions = results.isNotEmpty()
+                } catch (e: Exception) {
+                    // Erreur silencieuse
+                }
+            }
+        } else {
+            showArriveeSuggestions = false
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -89,25 +153,93 @@ fun CreateTripScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // Départ
-            OutlinedTextField(
-                value = depart,
-                onValueChange = { depart = it },
-                label = { Text("Adresse de départ") },
-                placeholder = { Text("Ex: Gare Montparnasse, 75015 Paris") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            // Départ avec autocomplete
+            Column {
+                OutlinedTextField(
+                    value = depart,
+                    onValueChange = {
+                        depart = it
+                        searchDepartPlaces(it)
+                    },
+                    label = { Text("Adresse de départ") },
+                    placeholder = { Text("Ex: Gare Montparnasse, Paris") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
 
-// Arrivée
-            OutlinedTextField(
-                value = arrivee,
-                onValueChange = { arrivee = it },
-                label = { Text("Adresse d'arrivée") },
-                placeholder = { Text("Ex: Part-Dieu, 69003 Lyon") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+                // Suggestions départ
+                if (showDepartSuggestions) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column {
+                            departSuggestions.forEach { place ->
+                                Text(
+                                    text = place.display_name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            depart = place.display_name
+                                            departLat = place.lat.toDoubleOrNull() ?: 0.0
+                                            departLon = place.lon.toDoubleOrNull() ?: 0.0
+                                            showDepartSuggestions = false
+                                        }
+                                        .padding(12.dp),
+                                    fontSize = 14.sp
+                                )
+                                if (place != departSuggestions.last()) {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Arrivée avec autocomplete
+            Column {
+                OutlinedTextField(
+                    value = arrivee,
+                    onValueChange = {
+                        arrivee = it
+                        searchArriveePlaces(it)
+                    },
+                    label = { Text("Adresse d'arrivée") },
+                    placeholder = { Text("Ex: Part-Dieu, Lyon") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // Suggestions arrivée
+                if (showArriveeSuggestions) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column {
+                            arriveeSuggestions.forEach { place ->
+                                Text(
+                                    text = place.display_name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            arrivee = place.display_name
+                                            arriveeLat = place.lat.toDoubleOrNull() ?: 0.0
+                                            arriveeLon = place.lon.toDoubleOrNull() ?: 0.0
+                                            showArriveeSuggestions = false
+                                        }
+                                        .padding(12.dp),
+                                    fontSize = 14.sp
+                                )
+                                if (place != arriveeSuggestions.last()) {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             // Date
             OutlinedTextField(
@@ -185,7 +317,7 @@ fun CreateTripScreen(
                             val prix = prixParPersonne.toDoubleOrNull() ?: 0.0
                             val places = placesDisponibles.toIntOrNull() ?: 0
 
-                            // Créer le trajet SANS photo (temporaire)
+                            // Créer le trajet
                             val nouveauTrajet = Trajet(
                                 conducteur = currentUserEmail,
                                 depart = depart,
@@ -195,7 +327,11 @@ fun CreateTripScreen(
                                 prixParPersonne = prix,
                                 placesDisponibles = places,
                                 placesTotales = places,
-                                photoUrl = ""  // Pas de photo pour le moment
+                                photoUrl = "",
+                                departLat = departLat,
+                                departLon = departLon,
+                                arriveeLat = arriveeLat,
+                                arriveeLon = arriveeLon
                             )
 
                             val success = repository.createTrajet(nouveauTrajet)

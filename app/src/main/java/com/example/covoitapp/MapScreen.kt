@@ -40,8 +40,18 @@ fun MapScreen(
     // Charger l'itinéraire routier
     LaunchedEffect(trajet) {
         scope.launch {
-            val departPoint = getApproximateLocation(trajet.depart)
-            val arriveePoint = getApproximateLocation(trajet.arrivee)
+            // Utiliser les coordonnées GPS du trajet (nouvelles)
+            val departPoint = if (trajet.departLat != 0.0 && trajet.departLon != 0.0) {
+                GeoPoint(trajet.departLat, trajet.departLon)
+            } else {
+                getApproximateLocation(trajet.depart)
+            }
+
+            val arriveePoint = if (trajet.arriveeLat != 0.0 && trajet.arriveeLon != 0.0) {
+                GeoPoint(trajet.arriveeLat, trajet.arriveeLon)
+            } else {
+                getApproximateLocation(trajet.arrivee)
+            }
 
             // Récupérer l'itinéraire routier depuis OSRM
             val coordinates = OSRMService.getRoute(
@@ -92,8 +102,18 @@ fun MapScreen(
                             setTileSource(TileSourceFactory.MAPNIK)
                             setMultiTouchControls(true)
 
-                            val departPoint = getApproximateLocation(trajet.depart)
-                            val arriveePoint = getApproximateLocation(trajet.arrivee)
+                            // Utiliser les coordonnées GPS du trajet
+                            val departPoint = if (trajet.departLat != 0.0 && trajet.departLon != 0.0) {
+                                GeoPoint(trajet.departLat, trajet.departLon)
+                            } else {
+                                getApproximateLocation(trajet.depart)
+                            }
+
+                            val arriveePoint = if (trajet.arriveeLat != 0.0 && trajet.arriveeLon != 0.0) {
+                                GeoPoint(trajet.arriveeLat, trajet.arriveeLon)
+                            } else {
+                                getApproximateLocation(trajet.arrivee)
+                            }
 
                             // Marqueur départ (vert)
                             val departMarker = Marker(this).apply {
@@ -145,25 +165,21 @@ fun MapScreen(
     }
 }
 
-// Fonction pour obtenir des coordonnées approximatives
+// Fonction pour obtenir des coordonnées approximatives (fallback)
 private fun getApproximateLocation(city: String): GeoPoint {
-    return when (city.lowercase()) {
-        "paris" -> GeoPoint(48.8566, 2.3522)
-        "lyon" -> GeoPoint(45.7640, 4.8357)
-        "marseille" -> GeoPoint(43.2965, 5.3698)
-        "toulouse" -> GeoPoint(43.6047, 1.4442)
-        "nice" -> GeoPoint(43.7102, 7.2620)
-        "nantes" -> GeoPoint(47.2184, -1.5536)
-        "bordeaux" -> GeoPoint(44.8378, -0.5792)
-        "lille" -> GeoPoint(50.6292, 3.0573)
-        "rennes" -> GeoPoint(48.1173, -1.6778)
-        "strasbourg" -> GeoPoint(48.5734, 7.7521)
-        "montpellier" -> GeoPoint(43.6108, 3.8767)
-        "reims" -> GeoPoint(49.2583, 4.0317)
-        "cahors" -> GeoPoint(44.4479, 1.4410)
-        "figeac" -> GeoPoint(44.6088, 2.0319)
-        "rome" -> GeoPoint(41.9028, 12.4964)
-        "naples" -> GeoPoint(40.8518, 14.2681)
+    return when {
+        city.lowercase().contains("paris") -> GeoPoint(48.8566, 2.3522)
+        city.lowercase().contains("lyon") -> GeoPoint(45.7640, 4.8357)
+        city.lowercase().contains("marseille") -> GeoPoint(43.2965, 5.3698)
+        city.lowercase().contains("toulouse") -> GeoPoint(43.6047, 1.4442)
+        city.lowercase().contains("nice") -> GeoPoint(43.7102, 7.2620)
+        city.lowercase().contains("nantes") -> GeoPoint(47.2184, -1.5536)
+        city.lowercase().contains("bordeaux") -> GeoPoint(44.8378, -0.5792)
+        city.lowercase().contains("lille") -> GeoPoint(50.6292, 3.0573)
+        city.lowercase().contains("rennes") -> GeoPoint(48.1173, -1.6778)
+        city.lowercase().contains("strasbourg") -> GeoPoint(48.5734, 7.7521)
+        city.lowercase().contains("montpellier") -> GeoPoint(43.6108, 3.8767)
+        city.lowercase().contains("reims") -> GeoPoint(49.2583, 4.0317)
         else -> GeoPoint(46.2276, 2.2137) // Centre de la France par défaut
     }
 }
