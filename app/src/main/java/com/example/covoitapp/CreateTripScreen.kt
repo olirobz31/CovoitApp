@@ -93,16 +93,18 @@ fun CreateTripScreen(
             OutlinedTextField(
                 value = depart,
                 onValueChange = { depart = it },
-                label = { Text("Lieu de départ") },
+                label = { Text("Adresse de départ") },
+                placeholder = { Text("Ex: Gare Montparnasse, 75015 Paris") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Arrivée
+// Arrivée
             OutlinedTextField(
                 value = arrivee,
                 onValueChange = { arrivee = it },
-                label = { Text("Lieu d'arrivée") },
+                label = { Text("Adresse d'arrivée") },
+                placeholder = { Text("Ex: Part-Dieu, 69003 Lyon") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
